@@ -1,209 +1,213 @@
-import React, {Component, PropTypes} from "react"
+/**
+ * Created by quando on 10/3/17.
+ * based from https://github.com/xuopled/react-google-places-suggest
+ */
 
-class GooglePlacesSuggest extends Component {
-  constructor() {
-    super()
+import React from 'react';
 
-    this.state = {
-      coordinate: null,
-      googleMaps: null,
-      focusedSuggestIndex: 0,
-      selectedLabel: "",
-      suggests: [],
-    }
-
-    this.handleKeyDown = this.handleKeyDown.bind(this)
-  }
+class GooglePlacesSuggest extends React.PureComponent {
+  state = {
+    coordinate: null,
+    googleMaps: null,
+    focusedSuggestIndex: 0,
+    selectedLabel: '',
+    suggests: [],
+  };
 
   componentWillMount() {
-    this.updateSuggests(this.props.search)
+    this.updateSuggests(this.props.search);
   }
 
   componentWillReceiveProps(nextProps) {
-    this.updateSuggests(nextProps.search)
+    this.updateSuggests(nextProps.search);
   }
 
-  handleSelectSuggest(suggest) {
-    const {onSelectSuggest} = this.props
+  handleSelectSuggest = (suggest) => {
+    const { onSelectSuggest } = this.props;
 
     this.geocodeSuggest(suggest.description, () => {
-      this.setState({selectedLabel: suggest.description, suggests: []}, () => {
-        onSelectSuggest(suggest, this.state.coordinate)
-      })
-    })
-  }
+      this.setState({ selectedLabel: suggest.description, suggests: [] }, () => {
+        onSelectSuggest(suggest, this.state.coordinate);
+      });
+    });
+  };
 
-  updateSuggests(search) {
-    const {googleMaps, suggestRadius, suggestTypes, suggestComponentRestrictions} = this.props
-    const autocompleteService = new googleMaps.places.AutocompleteService()
+  updateSuggests = (search) => {
+    const { googleMaps, suggestTypes, suggestComponentRestrictions } = this.props;
+    const autocompleteService = new googleMaps.places.AutocompleteService();
 
     if (!search) {
-      this.setState({suggests: []})
-      return
+      this.setState({ suggests: [] });
+      return;
     }
 
     autocompleteService.getPlacePredictions({
       input: search,
-      location: new googleMaps.LatLng(0, 0),
-      radius: suggestRadius,
       types: suggestTypes,
       componentRestrictions: suggestComponentRestrictions,
     }, (googleSuggests) => {
       if (!googleSuggests) {
-        this.setState({suggests: []})
-        return
+        this.setState({ suggests: [] });
+        return;
       }
 
       this.setState({
         focusedSuggestIndex: 0,
         suggests: googleSuggests,
-      })
-    })
-  }
+      });
+    });
+  };
 
-  geocodeSuggest(suggestLabel, callback) {
-    const {googleMaps} = this.props
-    const geocoder = new googleMaps.Geocoder()
+  geocodeSuggest = (suggestLabel, callback) => {
+    const { googleMaps } = this.props;
+    const geocoder = new googleMaps.Geocoder();
 
-    geocoder.geocode({address: suggestLabel}, (results, status) => {
+    geocoder.geocode({ address: suggestLabel }, (results, status) => {
       if (status === googleMaps.GeocoderStatus.OK) {
-        const location = results[0].geometry.location
+        const location = results[0].geometry.location;
         const coordinate = {
           latitude: location.lat(),
           longitude: location.lng(),
           title: suggestLabel,
-        }
+          formatted_address: results[0].formatted_address,
+        };
 
-        this.setState({coordinate}, callback)
+        this.setState({ coordinate }, callback);
       }
-    })
-  }
+    });
+  };
 
-  handleKeyDown(e) {
-    const {focusedSuggestIndex, suggests} = this.state
+  handleKeyDown = (e) => {
+    const { focusedSuggestIndex, suggests } = this.state;
 
     if (suggests.length > 0) {
-      if (e.key === "Enter") {
-        this.handleSelectSuggest(suggests[focusedSuggestIndex])
-      } else if (e.key === "ArrowUp") {
+      if (e.key === 'Enter' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+      }
+
+      if (e.key === 'Enter') {
+        this.handleSelectSuggest(suggests[focusedSuggestIndex]);
+      } else if (e.key === 'ArrowUp') {
         if (suggests.length > 0 && focusedSuggestIndex > 0) {
-          this.focusSuggest(focusedSuggestIndex - 1)
+          this.focusSuggest(focusedSuggestIndex - 1);
         }
-      } else if (e.key === "ArrowDown") {
+      } else if (e.key === 'ArrowDown') {
         if (suggests.length > 0 && focusedSuggestIndex < suggests.length - 1) {
-          this.focusSuggest(focusedSuggestIndex + 1)
+          this.focusSuggest(focusedSuggestIndex + 1);
         }
       }
     }
-  }
+  };
 
-  focusSuggest(index) {
-    this.setState({focusedSuggestIndex: index})
-  }
+  focusSuggest = (index) => this.setState({ focusedSuggestIndex: index });
 
-  renderNoResults() {
-    const {textNoResults} = this.props
+  renderNoResults = () => this.props.textNoResults && (
+    <li className="placesSuggest_suggest">
+      {this.props.textNoResults}
+    </li>
+  );
 
-    if(textNoResults === null) {
-      return;
-    }
-
-    return (
-      <li className="placesSuggest_suggest">
-        {textNoResults}
-      </li>
-    )
-  }
-
-  renderDefaultSuggest(suggest) {
-    const {description, structured_formatting} = suggest
-    const firstMatchedString = structured_formatting.main_text_matched_substrings.shift()
-    let labelParts = null
+  renderDefaultSuggest = (suggest) => {
+    const { description, structured_formatting } = suggest;
+    const firstMatchedString = structured_formatting.main_text_matched_substrings.shift();
+    let labelParts = null;
 
     if (firstMatchedString) {
       labelParts = {
         before: description.substr(0, firstMatchedString.offset),
         matched: description.substr(firstMatchedString.offset, firstMatchedString.length),
         after: description.substr(firstMatchedString.offset + firstMatchedString.length),
-      }
+      };
     }
 
     return (
       <div>
         <span className="placesSuggest_suggestLabel">
-          {labelParts
-            ? <span>
-                {labelParts.before.length > 0 ? <span>{labelParts.before}</span> : null}
-                <span className="placesSuggest_suggestMatch">{labelParts.matched}</span>
-                {labelParts.after.length > 0 ? <span>{labelParts.after}</span> : null}
-              </span>
-            : description
+          {labelParts ?
+            <span>
+              {labelParts.before.length > 0 ? <span>{labelParts.before}</span> : null}
+              <span className="placesSuggest_suggestMatch">{labelParts.matched}</span>
+              {labelParts.after.length > 0 ? <span>{labelParts.after}</span> : null}
+            </span> : description
           }
         </span>
       </div>
-    )
-  }
+    );
+  };
 
   renderSuggest(suggest) {
-    const {renderSuggest} = this.props
+    const { renderSuggest } = this.props;
     return renderSuggest
-      ? this.renderSuggest(suggest)
-      : this.renderDefaultSuggest(suggest)
+      ? renderSuggest(suggest)
+      : this.renderDefaultSuggest(suggest);
   }
 
   renderSuggests() {
-    const {focusedSuggestIndex, suggests} = this.state
+    const { focusedSuggestIndex, suggests } = this.state;
     return (
       <ul className="placesSuggest_suggests">
-        {suggests.length > 0
-          ? suggests.map((suggest, key) => (
-            <li
-              key={key}
-              className={`placesSuggest_suggest ${focusedSuggestIndex === key && "placesSuggest_suggest-active"}`}
-              onClick={() => this.handleSelectSuggest(suggest)}
-            >
-              {this.renderSuggest(suggest)}
-            </li>
-          ))
-          : this.renderNoResults()
+        {suggests.length > 0 ?
+          // eslint-disable-next-line
+          suggests.map((suggest, key) => (<li
+            key={key}
+            className={`placesSuggest_suggest ${focusedSuggestIndex === key && 'placesSuggest_suggest-active'}`}
+            onClick={() => this.handleSelectSuggest(suggest)}
+          >
+            {this.renderSuggest(suggest)}
+          </li>))
+        : this.renderNoResults()
         }
       </ul>
-    )
+    );
   }
 
   render() {
-    const {selectedLabel} = this.state
-    const {children, search} = this.props
-    return (
-      <div className="placesSuggest" onKeyDown={this.handleKeyDown}>
-        {children}
-        {search && selectedLabel !== search && this.renderSuggests()}
-      </div>
-    )
+    const { selectedLabel } = this.state;
+    const { children, search } = this.props;
+    // eslint-disable-next-line
+    return (<div className="placesSuggest" onKeyDown={this.handleKeyDown}>
+      {children}
+      {search && selectedLabel !== search && this.renderSuggests()}
+    </div>);
   }
 }
 
 GooglePlacesSuggest.propTypes = {
-  children: PropTypes.any.isRequired,
-  googleMaps: PropTypes.object.isRequired,
-  onSelectSuggest: PropTypes.func,
-  renderSuggest: PropTypes.func,
-  search: PropTypes.string,
-  suggestRadius: PropTypes.number,
-  suggestTypes: PropTypes.array,
-  suggestComponentRestrictions: PropTypes.object,
-  textNoResults: PropTypes.string,
-}
+  children: React.PropTypes.any.isRequired,
+  googleMaps: React.PropTypes.object.isRequired,
+  onSelectSuggest: React.PropTypes.func,
+  renderSuggest: React.PropTypes.func,
+  search: React.PropTypes.string,
+  suggestTypes: React.PropTypes.array,
+  suggestComponentRestrictions: React.PropTypes.object,
+  textNoResults: React.PropTypes.string,
+};
 
 GooglePlacesSuggest.defaultProps = {
   onSelectSuggest: () => {},
-  search: "",
-  suggestRadius: 20,  
+  search: '',
   suggestTypes: [],
   suggestComponentRestrictions: {
-    country: ""
+    country: 'au',
   },
-  textNoResults: "No results",
-}
+  textNoResults: 'No results',
+};
 
-export default GooglePlacesSuggest
+export const geocodeReverse = (googleMaps, { location }, callback) => {
+  const geocoder = new googleMaps.Geocoder();
+
+  geocoder.geocode({ location }, (results, status) => {
+    if (status === googleMaps.GeocoderStatus.OK) {
+      const { lat, lng } = results[0].geometry.location;
+      const coordinate = {
+        latitude: lat(),
+        longitude: lng(),
+        title: results[0].formatted_address,
+      };
+
+      callback(coordinate);
+    }
+  });
+};
+
+export default GooglePlacesSuggest;
