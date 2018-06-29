@@ -144,24 +144,27 @@ class GooglePlacesSuggest extends React.PureComponent {
   }
 
   renderSuggests() {
-    const {baseClassName, activeClassName} = this.props;
+    const {baseClassName, activeClassName, isDropdownOpen} = this.props;
     const {focusedSuggestIndex, suggests} = this.state
+    if (isDropdownOpen) {
+      return (
+        <ul className="placesSuggest_suggests">
+          {suggests.length > 0 ?
+            // eslint-disable-next-line
+            suggests.map((suggest, key) => (<li
+              key={key}
+              className={`${baseClassName} ${focusedSuggestIndex === key && activeClassName}`}
+              onClick={() => this.handleSelectSuggest(suggest)}
+            >
+              {this.renderSuggest(suggest)}
+            </li>))
+          : this.renderNoResults()
+          }
+        </ul>
+      )
+    }
 
-    return (
-      <ul className="placesSuggest_suggests">
-        {suggests.length > 0 ?
-          // eslint-disable-next-line
-          suggests.map((suggest, key) => (<li
-            key={key}
-            className={`${baseClassName} ${focusedSuggestIndex === key && activeClassName}`}
-            onClick={() => this.handleSelectSuggest(suggest)}
-          >
-            {this.renderSuggest(suggest)}
-          </li>))
-        : this.renderNoResults()
-        }
-      </ul>
-    )
+    return '';
   }
 
   render() {
@@ -186,6 +189,7 @@ GooglePlacesSuggest.propTypes = {
   textNoResults: PropTypes.string,
   baseClassName: PropTypes.string,
   activeClassName: PropTypes.string,
+  isDropdownOpen: PropTypes.bool,
 }
 
 GooglePlacesSuggest.defaultProps = {
@@ -198,6 +202,7 @@ GooglePlacesSuggest.defaultProps = {
   textNoResults: "No results",
   baseClassName: "placesSuggest_suggest",
   activeClassName: "placesSuggest_suggest-active",
+  isDropdownOpen: false,
 }
 
 export const geocodeReverse = (googleMaps, {location}, callback) => {
