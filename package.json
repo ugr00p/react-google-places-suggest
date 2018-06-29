@@ -57,6 +57,7 @@
     "dist": "webpack -p",
     "build": "babel ./src --out-dir ./lib --source-maps && postcss --use autoprefixer src/index.css -d lib/",
     "watch": "webpack --progress --colors --watch",
-    "prepublish": "npm run clean && npm run build && npm run dist"
+    "prepublish": "npm run clean && npm run build && npm run dist",
+    "prepare": "npm run clean && npm run build && npm run dist"
   }
 }
