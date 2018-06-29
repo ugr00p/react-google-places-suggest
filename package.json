@@ -1,6 +1,6 @@
 {
   "name": "react-google-places-suggest",
-  "version": "2.0.1",
+  "version": "2.0.5",
   "description": "React component to select geolocated suggestion from Google Maps Places API",
   "repository": {
     "type": "git",
